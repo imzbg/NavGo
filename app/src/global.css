@@ -4,43 +4,72 @@ body,
   height: 100%;
 }
 
+:root {
+  color-scheme: dark;
+  --ion-background-color: #0b1220;
+  --ion-background-color-rgb: 11, 18, 32;
+  --ion-text-color: #e2e8f0;
+  --ion-text-color-rgb: 226, 232, 240;
+  --ion-toolbar-background: #0b1220;
+  --ion-tab-bar-background: #0b1220;
+  --ion-color-primary: #38bdf8;
+  --ion-color-primary-contrast: #031525;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f3f4f6;
-  color: #111827;
+  background: #0b1220;
+  color: #e2e8f0;
   transition: background 0.25s ease, color 0.25s ease;
+}
+
+ion-app,
+ion-content,
+.ion-page,
+body,
+#root {
+  background: #0b1220 !important;
+  color: #e2e8f0;
+}
+
+ion-content::part(scroll) {
+  background: #0b1220;
 }
 
 * {
   box-sizing: border-box;
 }
 
+a {
+  color: #38bdf8;
+}
+
 label {
-  color: #374151;
+  color: #cbd5f5;
 }
 
 input,
 select,
 textarea {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  color: #111827;
+  background: #111827;
+  border: 1px solid #1e293b;
+  color: #e2e8f0;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #9ca3af;
+  color: #64748b;
 }
 
 button {
   font-family: inherit;
-  color: #111827;
+  color: #e2e8f0;
 }
 
 .btn-primary {
-  background: #2563eb;
-  color: #ffffff;
+  background: #38bdf8;
+  color: #031525;
   border: none;
 }
 

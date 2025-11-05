@@ -2,16 +2,21 @@ import React, { useEffect, useState } from "react";
 import { getPreferences, updatePreferences, Preferences } from "../services/api";
 
 const defaultPrefs: Preferences = {
-  theme: "light",
+  theme: "dark",
   units: "km",
   avoidTolls: false,
 };
 
 const palette = {
-  border: "#d1d5db",
-  primary: "#2563eb",
-  primaryContrast: "#ffffff",
-  muted: "#4b5563",
+  border: "rgba(148, 163, 184, 0.2)",
+  primary: "#38bdf8",
+  primaryContrast: "#031525",
+  text: "#e2e8f0",
+  muted: "#94a3b8",
+  successBg: "rgba(34, 197, 94, 0.18)",
+  successText: "#bbf7d0",
+  errorBg: "rgba(248, 113, 113, 0.16)",
+  errorText: "#fecaca",
 };
 
 export default function SettingsPage() {
@@ -45,7 +50,7 @@ export default function SettingsPage() {
     setError("");
     setMessage("");
     try {
-      await updatePreferences({ ...prefs, theme: "light" });
+      await updatePreferences({ ...prefs, theme: "dark" });
       setMessage("Preferencias salvas com sucesso.");
     } catch (err) {
       console.error("failed to save preferences", err);
@@ -56,20 +61,50 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ padding: 16, maxWidth: 480, margin: "0 auto", color: "#111827" }}>
-      <h2 style={{ marginBottom: 16 }}>Configuracoes</h2>
+    <div
+      style={{
+        padding: 16,
+        maxWidth: 480,
+        margin: "0 auto",
+        color: palette.text,
+        background: "#0b1220",
+        minHeight: "calc(100vh - 56px)",
+        width: "100%",
+        boxSizing: "border-box",
+        paddingBottom: 96,
+      }}
+    >
+      <h2 style={{ marginBottom: 16, color: palette.text }}>Configuracoes</h2>
 
       {loading ? (
         <div style={{ color: palette.muted }}>Carregando preferencias...</div>
       ) : (
         <>
           {error && (
-            <div style={{ marginBottom: 12, background: "#fee2e2", color: "#991b1b", padding: "8px 12px", borderRadius: 8 }}>
+            <div
+              style={{
+                marginBottom: 12,
+                background: palette.errorBg,
+                color: palette.errorText,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: `1px solid rgba(248, 113, 113, 0.35)`,
+              }}
+            >
               {error}
             </div>
           )}
           {message && (
-            <div style={{ marginBottom: 12, background: "#dcfce7", color: "#166534", padding: "8px 12px", borderRadius: 8 }}>
+            <div
+              style={{
+                marginBottom: 12,
+                background: palette.successBg,
+                color: palette.successText,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid rgba(34, 197, 94, 0.35)",
+              }}
+            >
               {message}
             </div>
           )}
@@ -80,7 +115,13 @@ export default function SettingsPage() {
               <select
                 value={prefs.units}
                 onChange={(event) => setPrefs((prev) => ({ ...prev, units: event.target.value as Preferences["units"] }))}
-                style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${palette.border}` }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: `1px solid ${palette.border}`,
+                  background: "#111827",
+                  color: palette.text,
+                }}
               >
                 <option value="km">Quilometros</option>
                 <option value="mi">Milhas</option>
@@ -102,13 +143,14 @@ export default function SettingsPage() {
             disabled={saving}
             style={{
               marginTop: 20,
-              background: saving ? "rgba(37,99,235,0.7)" : palette.primary,
+              background: saving ? "rgba(56, 189, 248, 0.5)" : palette.primary,
               color: palette.primaryContrast,
               border: "none",
               borderRadius: 10,
               padding: "12px 18px",
               width: "100%",
               fontWeight: 600,
+              cursor: saving ? "not-allowed" : "pointer",
             }}
           >
             {saving ? "Salvando..." : "Salvar preferencias"}

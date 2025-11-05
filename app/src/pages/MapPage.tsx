@@ -3,7 +3,7 @@ import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import AddressInput from "../components/AddressInput";
-import { fetchRoutes, LatLng, RouteResult } from "../services/api";
+import { fetchRoutes, LatLng, RouteResult, saveRoutes } from "../services/api";
 import { STORAGE_ROUTES } from "../services/storageKeys";
 
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -13,14 +13,50 @@ const DefaultIcon = L.icon({ iconUrl, shadowUrl: iconShadow });
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const palette = {
-  surface: "#ffffff",
-  border: "#d1d5db",
-  primary: "#2563eb",
-  primaryContrast: "#ffffff",
-  text: "#111827",
-  muted: "#4b5563",
-  shadow: "rgba(15, 23, 42, 0.08)",
+  surface: "#111827",
+  elevated: "#1f2937",
+  border: "rgba(148, 163, 184, 0.2)",
+  primary: "#38bdf8",
+  primaryContrast: "#031525",
+  text: "#e2e8f0",
+  muted: "#94a3b8",
+  shadow: "rgba(2, 6, 23, 0.6)",
+  success: "#34d399",
 };
+
+const SYNC_MAX_COORDS = 500;
+
+function simplifyRoutesForSync(routes: RouteResult[]): RouteResult[] {
+  return routes.map((route) => {
+    const lean: RouteResult = { ...route };
+    if (Array.isArray(lean.geometry?.coordinates)) {
+      const coords = lean.geometry.coordinates;
+      const step = Math.max(1, Math.ceil(coords.length / SYNC_MAX_COORDS));
+      const simplified: [number, number][] = [];
+      for (let i = 0; i < coords.length; i += step) {
+        const [lng, lat] = coords[i];
+        simplified.push([Number(lng.toFixed(5)), Number(lat.toFixed(5))]);
+      }
+      const last = coords[coords.length - 1];
+      if (last) {
+        const [lastLng, lastLat] = last;
+        const lastRounded: [number, number] = [Number(lastLng.toFixed(5)), Number(lastLat.toFixed(5))];
+        const currentLast = simplified[simplified.length - 1];
+        if (!currentLast || currentLast[0] !== lastRounded[0] || currentLast[1] !== lastRounded[1]) {
+          simplified.push(lastRounded);
+        }
+      }
+      lean.geometry = {
+        ...lean.geometry,
+        coordinates: simplified,
+      };
+    }
+    if ((lean as any).legs) {
+      delete (lean as any).legs;
+    }
+    return lean;
+  });
+}
 
 type StoredContext = {
   origin?: LatLng | null;
@@ -126,9 +162,7 @@ export default function MapPage() {
 
   const persistData = useCallback(
     (routesToStore: RouteResult[], activeIndex: number, overrides?: Partial<StoredContext>) => {
-      localStorage.setItem(STORAGE_ROUTES.routes, JSON.stringify(routesToStore));
-      localStorage.setItem(STORAGE_ROUTES.activeIndex, String(activeIndex));
-      const currentContext: StoredContext = {
+      const contextBase: StoredContext = {
         origin,
         destination,
         stops: stops.filter((s): s is LatLng => !!s),
@@ -136,8 +170,16 @@ export default function MapPage() {
         destLabel: destText,
         stopLabels: stopsText,
       };
-      const contextForStorage: StoredContext = { ...currentContext, ...overrides };
+      const contextForStorage: StoredContext = { ...contextBase, ...overrides };
+      localStorage.setItem(STORAGE_ROUTES.routes, JSON.stringify(routesToStore));
+      localStorage.setItem(STORAGE_ROUTES.activeIndex, String(activeIndex));
       localStorage.setItem(STORAGE_ROUTES.context, JSON.stringify(contextForStorage));
+      const timestamp = new Date().toISOString();
+      localStorage.setItem(STORAGE_ROUTES.timestamp, timestamp);
+      const syncPayload = simplifyRoutesForSync(routesToStore);
+      saveRoutes(syncPayload, activeIndex, timestamp).catch((err) => {
+        console.error("failed to sync routes", err);
+      });
     },
     [destination, origin, originText, destText, stops, stopsText]
   );
@@ -190,7 +232,6 @@ export default function MapPage() {
         destination,
         stops: validStops,
       });
-      localStorage.setItem(STORAGE_ROUTES.timestamp, new Date().toISOString());
     } catch (err) {
       console.error(err);
       setError("Nao foi possivel calcular a rota. Tente novamente.");
@@ -200,7 +241,7 @@ export default function MapPage() {
   }
 
   return (
-    <div style={{ height: "100%", position: "relative" }}>
+    <div style={{ height: "100%", position: "relative", background: "#0b1220" }}>
       <MapContainer center={[activeCenter.lat, activeCenter.lng]} zoom={13} style={{ position: "absolute", inset: 0, zIndex: 1 }}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -211,11 +252,11 @@ export default function MapPage() {
         {myPos && <Marker position={[myPos.lat, myPos.lng]} />}
         {origin && <Marker position={[origin.lat, origin.lng]} />}
         {destination && <Marker position={[destination.lat, destination.lng]} />}
-        {selectedLine.length > 0 && <Polyline positions={selectedLine} color="#2563eb" weight={5} />}
+        {selectedLine.length > 0 && <Polyline positions={selectedLine} color={palette.primary} weight={5} />}
         {alternativeLines.map(
           (line, idx) =>
             line && line.length > 0 && (
-              <Polyline key={idx} positions={line} color="#9ca3af" weight={3} dashArray="6 8" opacity={0.7} />
+              <Polyline key={idx} positions={line} color={palette.muted} weight={3} dashArray="6 8" opacity={0.7} />
             )
         )}
       </MapContainer>
@@ -229,10 +270,10 @@ export default function MapPage() {
           zIndex: 9999,
           maxWidth: 420,
           margin: "0 auto",
-          background: palette.surface,
+          background: palette.elevated,
           border: `1px solid ${palette.border}`,
           borderRadius: 12,
-          boxShadow: `0 6px 18px ${palette.shadow}`,
+          boxShadow: `0 12px 24px ${palette.shadow}`,
           transition: "all 0.3s ease",
           overflow: "hidden",
           color: palette.text,
@@ -256,7 +297,7 @@ export default function MapPage() {
           <div style={{ padding: 12, maxHeight: "70vh", overflowY: "auto" }}>
             <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>Planejar rota</h3>
             {error && (
-              <div style={{ marginBottom: 10, color: "#ef4444", fontSize: 13 }}>
+              <div style={{ marginBottom: 10, color: "#f87171", fontSize: 13 }}>
                 {error}
               </div>
             )}
@@ -320,6 +361,7 @@ export default function MapPage() {
                   color: palette.primary,
                   borderRadius: 8,
                   padding: "8px 12px",
+                  cursor: "pointer",
                 }}
               >
                 + Parada
@@ -329,13 +371,14 @@ export default function MapPage() {
                 onClick={calculate}
                 disabled={loading || !destination}
                 style={{
-                  background: loading ? "rgba(37,99,235,0.7)" : palette.primary,
+                  background: loading ? "rgba(56, 189, 248, 0.5)" : palette.primary,
                   color: palette.primaryContrast,
                   border: "none",
                   borderRadius: 8,
                   padding: "8px 14px",
                   flexGrow: 1,
                   minWidth: 140,
+                  cursor: loading ? "not-allowed" : "pointer",
                 }}
               >
                 {loading ? "Calculando..." : "Calcular rota"}
@@ -360,7 +403,7 @@ export default function MapPage() {
                           border: `1px solid ${isActive ? palette.primary : palette.border}`,
                           borderRadius: 10,
                           padding: "10px 12px",
-                          background: isActive ? "rgba(37,99,235,0.12)" : palette.surface,
+                          background: isActive ? "rgba(56, 189, 248, 0.1)" : palette.surface,
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
@@ -370,7 +413,7 @@ export default function MapPage() {
                         <div style={{ color: palette.text }}>
                           <div style={{ fontWeight: 600 }}>
                             Rota {idx + 1}{" "}
-                            {idx === 0 ? <span style={{ color: "#16a34a" }}>Mais rapida</span> : null}
+                            {idx === 0 ? <span style={{ color: palette.success }}>Mais rapida</span> : null}
                           </div>
                           <div style={{ fontSize: 13, color: palette.muted }}>
                             {durationMin} min - {distanceKm} km{" "}
@@ -387,6 +430,7 @@ export default function MapPage() {
                             padding: "6px 14px",
                             fontSize: 12,
                             fontWeight: 600,
+                            cursor: "pointer",
                           }}
                         >
                           {isActive ? "Selecionada" : "Selecionar"}

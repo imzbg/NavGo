@@ -114,6 +114,20 @@ export type RouteResult = {
   [key: string]: any;
 };
 
+export type UserProfile = {
+  name: string;
+  cpf: string;
+  phone: string;
+  email: string;
+  password: string;
+};
+
+export type SavedRoutesResponse = {
+  routes: RouteResult[];
+  activeIndex: number;
+  timestamp: string | null;
+};
+
 export async function geocode(q: string) {
   return apiFetch(`/api/geocode?q=${encodeURIComponent(q)}`);
 }
@@ -123,6 +137,17 @@ export async function fetchRoutes(origin: LatLng, destination: LatLng, stops: La
     routes: RouteResult[];
     [key: string]: any;
   }>;
+}
+
+export async function saveRoutes(routes: RouteResult[], activeIndex: number, timestamp: string){
+  return apiFetch(`/api/routes/saved`, {
+    method: 'POST',
+    body: JSON.stringify({ routes, activeIndex, timestamp })
+  });
+}
+
+export async function fetchSavedRoutes(){
+  return apiFetch(`/api/routes/saved`) as Promise<SavedRoutesResponse>;
 }
 
 // Auth
@@ -148,4 +173,12 @@ export async function getPreferences(){
 }
 export async function updatePreferences(prefs: Preferences){
   return apiFetch(`/api/user/preferences`, { method: 'PUT', body: JSON.stringify(prefs) });
+}
+
+export async function getProfile(){
+  return apiFetch(`/api/user/profile`) as Promise<UserProfile>;
+}
+
+export async function updateProfile(profile: UserProfile){
+  return apiFetch(`/api/user/profile`, { method:'PUT', body: JSON.stringify(profile) });
 }

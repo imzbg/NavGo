@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { geocode } from "../services/api";
 
 const palette = {
-  border: "#d1d5db",
-  surface: "#ffffff",
-  muted: "#4b5563",
-  shadow: "rgba(15, 23, 42, 0.08)",
-  text: "#111827",
+  border: "rgba(148, 163, 184, 0.25)",
+  surface: "#1f2937",
+  muted: "#94a3b8",
+  shadow: "rgba(2, 6, 23, 0.6)",
+  text: "#e2e8f0",
+  highlight: "rgba(56, 189, 248, 0.08)",
 };
 
 type LocationSuggestion = {
@@ -58,7 +59,14 @@ export default function AddressInput({ label, value, onChangeText, onSelectLocat
         value={value}
         onChange={(event) => onChangeText(event.target.value)}
         placeholder="Digite um endereco..."
-        style={{ width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${palette.border}`, background: palette.surface, color: palette.text }}
+        style={{
+          width: "100%",
+          padding: 10,
+          borderRadius: 8,
+          border: `1px solid ${palette.border}`,
+          background: palette.surface,
+          color: palette.text,
+        }}
       />
       {isLoading && (
         <div style={{ fontSize: 11, color: palette.muted, marginTop: 4 }}>Buscando sugestoes...</div>
@@ -76,7 +84,7 @@ export default function AddressInput({ label, value, onChangeText, onSelectLocat
             zIndex: 10,
             maxHeight: 220,
             overflow: "auto",
-            boxShadow: `0 6px 16px ${palette.shadow}`,
+            boxShadow: `0 12px 24px ${palette.shadow}`,
           }}
         >
           {suggestions.map((suggestion, index) => (
@@ -96,7 +104,13 @@ export default function AddressInput({ label, value, onChangeText, onSelectLocat
                 padding: "10px 12px",
                 cursor: "pointer",
                 color: palette.text,
+                transition: "background 0.15s ease",
+                borderRadius: 6,
               }}
+              onMouseEnter={(event) => (event.currentTarget.style.background = palette.highlight)}
+              onMouseLeave={(event) => (event.currentTarget.style.background = "transparent")}
+              onFocus={(event) => (event.currentTarget.style.background = palette.highlight)}
+              onBlur={(event) => (event.currentTarget.style.background = "transparent")}
             >
               {suggestion.label}
             </button>

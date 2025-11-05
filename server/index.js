@@ -13,7 +13,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: process.env.JSON_LIMIT || '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.JSON_LIMIT || '5mb' }));
 app.use(morgan('dev'));
 
 const PORT = process.env.PORT || 4000;
@@ -22,6 +23,8 @@ const OSRM_URL = process.env.OSRM_URL || 'https://router.project-osrm.org';
 const usersFile = path.join(__dirname, 'data', 'users.json');
 const prefsFile = path.join(__dirname, 'data', 'prefs.json');
 const incidentsFile = path.join(__dirname, 'data', 'incidents.json');
+const profilesFile = path.join(__dirname, 'data', 'profiles.json');
+const savedRoutesFile = path.join(__dirname, 'data', 'routes.json');
 
 function readJSON(p){
   try { return JSON.parse(fs.readFileSync(p, 'utf-8')); }
@@ -32,6 +35,15 @@ function writeJSON(p, data){
 }
 
 app.get('/api/health', (_, res)=> res.json({ ok: true }));
+
+function requiredUserId(req, res){
+  const userId = (req.headers['x-user-id']||'').toString();
+  if(!userId){
+    res.status(400).json({ error:'user_id_required' });
+    return null;
+  }
+  return userId;
+}
 
 app.post('/api/auth/register', (req, res)=>{
   const { name, email, password } = req.body || {};
@@ -53,15 +65,66 @@ app.post('/api/auth/login', (req, res)=>{
 });
 
 app.get('/api/user/preferences', (req, res)=>{
-  const userId = (req.headers['x-user-id']||'').toString();
+  const userId = requiredUserId(req, res);
+  if(!userId) return;
   const db = readJSON(prefsFile) || { prefs: {} };
-  res.json(db.prefs[userId] || { theme:'light', units:'km', avoidTolls:false });
+  res.json(db.prefs[userId] || { theme:'dark', units:'km', avoidTolls:false });
 });
 app.put('/api/user/preferences', (req, res)=>{
-  const userId = (req.headers['x-user-id']||'').toString();
+  const userId = requiredUserId(req, res);
+  if(!userId) return;
   const db = readJSON(prefsFile) || { prefs: {} };
   db.prefs[userId] = req.body;
   writeJSON(prefsFile, db);
+  res.json({ ok: true });
+});
+
+const defaultProfile = { name:'', cpf:'', phone:'', email:'', password:'' };
+
+app.get('/api/user/profile', (req, res)=>{
+  const userId = requiredUserId(req, res);
+  if(!userId) return;
+  const db = readJSON(profilesFile) || { profiles: {} };
+  res.json({ ...defaultProfile, ...(db.profiles?.[userId] || {}) });
+});
+
+app.put('/api/user/profile', (req, res)=>{
+  const userId = requiredUserId(req, res);
+  if(!userId) return;
+  const incoming = req.body || {};
+  const profile = {
+    name: incoming.name ?? '',
+    cpf: incoming.cpf ?? '',
+    phone: incoming.phone ?? '',
+    email: incoming.email ?? '',
+    password: incoming.password ?? '',
+  };
+  const db = readJSON(profilesFile) || { profiles: {} };
+  db.profiles = db.profiles || {};
+  db.profiles[userId] = profile;
+  writeJSON(profilesFile, db);
+  res.json({ ok: true, profile });
+});
+
+app.get('/api/routes/saved', (req, res)=>{
+  const userId = requiredUserId(req, res);
+  if(!userId) return;
+  const db = readJSON(savedRoutesFile) || { routes: {} };
+  const stored = db.routes?.[userId] || { routes: [], activeIndex: 0, timestamp: null };
+  res.json(stored);
+});
+
+app.post('/api/routes/saved', (req, res)=>{
+  const userId = requiredUserId(req, res);
+  if(!userId) return;
+  const payload = req.body || {};
+  const routes = Array.isArray(payload.routes) ? payload.routes : [];
+  const activeIndex = Number.isFinite(payload.activeIndex) ? payload.activeIndex : 0;
+  const timestamp = typeof payload.timestamp === 'string' ? payload.timestamp : new Date().toISOString();
+  const db = readJSON(savedRoutesFile) || { routes: {} };
+  db.routes = db.routes || {};
+  db.routes[userId] = { routes, activeIndex, timestamp };
+  writeJSON(savedRoutesFile, db);
   res.json({ ok: true });
 });
 

@@ -49,10 +49,19 @@ export default function App() {
 function AppShell({ isAuthed }: { isAuthed: boolean }) {
   const location = useLocation();
   const showBottomNav = isAuthed && !location.pathname.startsWith("/login");
+  const background = "#0b1220";
 
   return (
-    <div style={{ height: "100vh", display: "grid", gridTemplateRows: "1fr auto" }}>
-      <div style={{ position: "relative", minHeight: 0 }}>
+    <div
+      style={{
+        height: "100vh",
+        display: "grid",
+        gridTemplateRows: "1fr auto",
+        background,
+        color: "#e2e8f0",
+      }}
+    >
+      <div style={{ position: "relative", minHeight: 0, background }}>
         <Routes>
           <Route path="/login" element={isAuthed ? <Navigate to="/map" replace /> : <LoginPage />} />
           <Route path="/" element={<Navigate to={isAuthed ? "/map" : "/login"} replace />} />
