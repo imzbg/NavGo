@@ -56,16 +56,6 @@ npm run dev   # ou: node index.js
 
 O servidor sobe por padrao em `http://localhost:4000` (veja `.env` para ajustar host/porta).
 
-### 2. Front-end (web/capacitor)
-
-```bash
-cd app
-npm install
-npm run dev
-```
-
-Aplicacao disponivel em `http://localhost:5173`.
-
 ---
 
 ## Build e sincronizacao Android
@@ -91,10 +81,21 @@ Aplicacao disponivel em `http://localhost:5173`.
 
 ---
 
-## Equipe
+## Grupo: Destino Audaz
 
 - Bruno de Souza
 - Pedro Emilio Martinelli
 - Viny Wottrich
 
 ---
+
+### Opcional (Versão Reescrita da Avaliação 2 (Web) )
+
+```bash
+cd app
+npm install
+npm run dev
+```
+
+Aplicacao disponivel em `http://localhost:5173`.
+
