@@ -1,6 +1,6 @@
 # NavGo
 
-Refatoração & Reescrita da Aplicação Web antes desenvolvida com NextJS que simulava um GPS Online.
+Refatoração & Reescrita da [Aplicação Web](https://github.com/PedroEmilioMartinelli/PROJETO-LORI-GPS) antes desenvolvida com NextJS que simulava um GPS Online.
 
 ---
 
