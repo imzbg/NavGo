@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">iGPS</string>
+    <string name="title_activity_main">iGPS</string>
+    <string name="package_name">com.igps.app</string>
+    <string name="custom_url_scheme">com.igps.app</string>
+</resources>
